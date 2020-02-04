@@ -10,6 +10,7 @@ Feature: Trello boards api tests
     And form field token = java.lang.System.getenv('trl_token');
     When method post
     Then status 200
+    And print response
     * def json = response
     * def idCreatedBoard = get json.id
     * def idUsername = '5e23b17009db88314e564927'
@@ -41,6 +42,7 @@ Feature: Trello boards api tests
     When method get
     Then status 200
     And match $[0].name contains '#string'
+    And print response
 
   Scenario: Request single board data
     Given path 'boards'
@@ -51,6 +53,7 @@ Feature: Trello boards api tests
     When method get
     Then status 200
     And match $._value == boardNameRandom
+    And print response
 
   Scenario: Get board actions and limit record to one
     * def responseBody =
@@ -84,6 +87,7 @@ Feature: Trello boards api tests
     Then status 200
     And match $[0] contains responseBody
     And match $[1].id == '#notpresent'
+    And print response
 
   Scenario: Get the enabled Power-Ups on a board
     * def responseBody =
@@ -102,6 +106,7 @@ Feature: Trello boards api tests
     When method get
     Then status 200
     And match $[0] contains responseBody
+    And print response
 
   Scenario: Get data of starred board
     #POST a new star on the latest created board
@@ -112,6 +117,7 @@ Feature: Trello boards api tests
     And form field token = java.lang.System.getenv('trl_token');
     When method post
     Then status 200
+    And print response
 
     * def body =
     """
@@ -128,6 +134,7 @@ Feature: Trello boards api tests
     When method get
     Then status 200
     And match $[0] contains body
+    And print response
 
   Scenario: Fetch open cards on a board
     * def body =
@@ -165,6 +172,7 @@ Feature: Trello boards api tests
     When method get
     Then status 200
     And match $[0] contains body
+    And print response
 
   Scenario: Fetch card data by id
     Given path 'boards/' + idCreatedBoard + '/cards/' + idCreatedCard
@@ -173,6 +181,7 @@ Feature: Trello boards api tests
     When method get
     Then status 200
     And match $.id == idCreatedCard
+    And print response
 
   Scenario: Fetch checklists data
 
@@ -184,6 +193,7 @@ Feature: Trello boards api tests
     And form field token = java.lang.System.getenv('trl_token');
     When method post
     Then status 200
+    And print response
 
 
     * def resBody =
@@ -204,6 +214,7 @@ Feature: Trello boards api tests
     When method get
     Then status 200
     And match $[0] contains resBody
+    And print response
 
   Scenario: Get the Custom Field Definitions that exist on a board.
     * def jsonPost = { idModel: '#(idCreatedBoard)', modelType:"board",name:"New",type:"list",pos:"top",display_cardFront:true }
@@ -214,6 +225,7 @@ Feature: Trello boards api tests
     And form field token = java.lang.System.getenv('trl_token');
     When method post
     Then status 200
+    And print response
 
     Given path 'customFields'
     And header Content-Type = 'application/json'
@@ -223,6 +235,13 @@ Feature: Trello boards api tests
     When method post
     And print jsonPost
     Then status 200
-    And match $.id == '#string'
-    And match $.idModel == idCreatedBoard
+    And print response
+
+    Given path 'boards/' + idCreatedBoard + '/customFields'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match $[0].id == '#string'
+    And match $[0].idModel == idCreatedBoard
     And print response
