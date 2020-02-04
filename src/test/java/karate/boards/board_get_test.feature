@@ -2,8 +2,9 @@ Feature: Trello boards api tests
 
   Background:
     * url 'https://api.trello.com/1/'
+    * def boardNameRandom = org.apache.commons.lang.RandomStringUtils.randomAlphabetic(10);
     Given path 'boards'
-    And form field name = 'NewName'
+    And form field name = boardNameRandom
     And form field defaultLists = 'true'
     And form field key = java.lang.System.getenv('trl_key');
     And form field token = java.lang.System.getenv('trl_token');
@@ -22,8 +23,9 @@ Feature: Trello boards api tests
     * def jsonLists = response
     * def idFirstList = get jsonLists[0].id
 
+    * def cardNameRandom = org.apache.commons.lang.RandomStringUtils.randomAlphabetic(10);
     Given path 'cards/'
-    And form field name = 'test_card_' + java.util.UUID.randomUUID();
+    And form field name = cardNameRandom
     And form field idList = idFirstList
     And form field key = java.lang.System.getenv('trl_key');
     And form field token = java.lang.System.getenv('trl_token');
@@ -48,7 +50,7 @@ Feature: Trello boards api tests
     And form field token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
-    And match $._value contains 'NewName'
+    And match $._value == boardNameRandom
 
   Scenario: Get board actions and limit record to one
     * def responseBody =
@@ -203,38 +205,9 @@ Feature: Trello boards api tests
     Then status 200
     And match $[0] contains resBody
 
-
-    #TODO Need to fix that scenario
   Scenario: Get the Custom Field Definitions that exist on a board.
+    * def jsonPost = { idModel: '#(idCreatedBoard)', modelType:"board",name:"New",type:"list",pos:"top",display_cardFront:true }
 
-    * def aaa =
-    """
-{
-    "idModel": "5e39afbdbb87f55875349796",
-    "modelType": "board",
-    "name": "My dropdown list",
-    "options": [
-        {
-            "color": "none",
-            "value": {
-                "text": "First"
-            },
-            "pos": 1024
-        },
-        {
-            "color": "none",
-            "value": {
-                "text": "Second"
-            },
-            "pos": 2048
-        }
-    ],
-    "pos": "bottom",
-    "type": "list",
-    "display_cardFront": true
-}
-    """
-    #Enable custom fields plugin on board
     Given path 'boards/' + idCreatedBoard + '/boardPlugins'
     And form field idPlugin = idCustomFieldsPlugin
     And form field key = java.lang.System.getenv('trl_key');
@@ -242,11 +215,14 @@ Feature: Trello boards api tests
     When method post
     Then status 200
 
-    Given path '/customFields/'
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When request aaa
+    Given path 'customFields'
     And header Content-Type = 'application/json'
-    And method post
-
+    And request jsonPost
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method post
+    And print jsonPost
     Then status 200
+    And match $.id == '#string'
+    And match $.idModel == idCreatedBoard
+    And print response
