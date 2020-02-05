@@ -31,7 +31,7 @@ public class BoardsTest {
 
     @Test
     public void testParallel() {
-        Results results = Runner.parallel(getClass(), 5, "target/surefire-reports");
+        Results results = Runner.parallel(getClass(), 1, "target/surefire-reports");
         generateReport(results.getReportDir());
         assertTrue(results.getErrorMessages(), results.getFailCount() == 0);
     }

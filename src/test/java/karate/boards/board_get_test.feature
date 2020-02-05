@@ -1,8 +1,9 @@
-Feature: Trello boards api tests
+Feature: Boards get tests
 
   Background:
     * url 'https://api.trello.com/1/'
     * def boardNameRandom = org.apache.commons.lang.RandomStringUtils.randomAlphabetic(10);
+    #Create a board before each scenario, pass board id to idCreatedBoard field
     Given path 'boards'
     And form field name = boardNameRandom
     And form field defaultLists = 'true'
@@ -167,8 +168,8 @@ Feature: Trello boards api tests
     """
 
     Given path 'boards/' + idCreatedBoard + '/cards'
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
     And match $[0] contains body
@@ -176,8 +177,8 @@ Feature: Trello boards api tests
 
   Scenario: Fetch card data by id
     Given path 'boards/' + idCreatedBoard + '/cards/' + idCreatedCard
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
     And match $.id == idCreatedCard
@@ -194,7 +195,6 @@ Feature: Trello boards api tests
     When method post
     Then status 200
     And print response
-
 
     * def resBody =
     """
@@ -217,8 +217,36 @@ Feature: Trello boards api tests
     And print response
 
   Scenario: Get the Custom Field Definitions that exist on a board.
-    * def jsonPost = { idModel: '#(idCreatedBoard)', modelType:"board",name:"New",type:"list",pos:"top",display_cardFront:true }
 
+      #'#(idCreatedBoard)'- id of created board pass as param to json
+    * def jsonBodyData =
+    """
+   { 
+   "idModel":"#(idCreatedBoard)",
+   "modelType":"board",
+   "name":"New",
+   "options":[
+      {
+         "color":"none",
+         "value":{
+            "text":"First Option"
+         },
+         "pos":1024
+      },
+      {
+         "color":"none",
+         "value":{
+            "text":"Second Option"
+         },
+         "pos":2048
+      }
+   ],
+   "type":"list",
+   "pos":"top",
+   "display_cardFront":true
+   }
+    """
+    #Enable board plugins custom fields on newly created board
     Given path 'boards/' + idCreatedBoard + '/boardPlugins'
     And form field idPlugin = idCustomFieldsPlugin
     And form field key = java.lang.System.getenv('trl_key');
@@ -227,9 +255,10 @@ Feature: Trello boards api tests
     Then status 200
     And print response
 
+    #Create custom field list with two options on the board
     Given path 'customFields'
     And header Content-Type = 'application/json'
-    And request jsonPost
+    And request jsonBodyData
     And param key = java.lang.System.getenv('trl_key');
     And param token = java.lang.System.getenv('trl_token');
     When method post
@@ -237,6 +266,7 @@ Feature: Trello boards api tests
     Then status 200
     And print response
 
+    #Get data for created custom field
     Given path 'boards/' + idCreatedBoard + '/customFields'
     And param key = java.lang.System.getenv('trl_key');
     And param token = java.lang.System.getenv('trl_token');
@@ -245,3 +275,130 @@ Feature: Trello boards api tests
     And match $[0].id == '#string'
     And match $[0].idModel == idCreatedBoard
     And print response
+
+  Scenario: Get labels data from a board
+
+    * def jsonMatch =
+      """
+  {
+    "id": '#string',
+    "name": '#string',
+    "color": '#string'
+  }
+      """
+    Given path 'boards/' + idCreatedBoard + '/labels'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match $[0] contains jsonMatch
+    And print response
+
+  Scenario: Get list date from a board
+    * def jsonMatch =
+        """
+  {
+    "id": '#string',
+    "name": '#string',
+    "cards": '#array'
+  }
+        """
+    Given path 'boards/' + idCreatedBoard + '/lists'
+    And param cards = 'all'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match $[0] contains jsonMatch
+    And print response
+
+  Scenario: Get list date from a board with filter option
+
+    Given path '/lists/' + idFirstList + '/closed'
+    And param value = true
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    And request '/lists/' + idFirstList + '/closed'
+    When method put
+    Then status 200
+
+    * def jsonMatch =
+    """
+  {
+    "id": '#string',
+    "name": '#string',
+    "closed": true,
+    "idBoard": '#string',
+    "pos": '#number',
+    "subscribed": '#boolean'
+  }
+    """
+    Given path '/boards/' + idCreatedBoard + '/lists/closed'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match response[0] contains jsonMatch
+    And print response
+
+  Scenario: Get the members for a board
+
+    * def jsonMatch =
+    """
+  {
+    "id": '#(idUsername)',
+    "fullName": "trelloautoapitest",
+    "username": "userautoapitest"
+  }
+    """
+    Given path '/boards/' + idCreatedBoard + '/members'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match response[0] == jsonMatch
+    And print response
+
+  Scenario: Get information about the memberships users have to the board.
+
+    * def jsonMatch =
+    """
+  {
+    "id": '#string',
+    "idMember": '#(idUsername)',
+    "memberType": "admin",
+    "unconfirmed": false,
+    "deactivated": false
+  }
+    """
+    Given path '/boards/' + idCreatedBoard + '/memberships'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match response[0] == jsonMatch
+    And print response
+    And print jsonMatch
+
+  Scenario: List the Power-Ups for a board
+
+    * def jsonMatch =
+    """
+  {
+    "id": #string,
+    "idOrganizationOwner": #string,
+    "author": #string,
+    "capabilities": #array,
+    "categories": #array,
+    "iframeConnectorUrl": #string,
+    "name": #string,
+  }
+    """
+    Given path '/boards/' + idCreatedBoard + '/plugins'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match response[0] contains jsonMatch
+    And print response
+    And print jsonMatch
