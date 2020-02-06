@@ -122,6 +122,73 @@ Feature: Boards post tests
     And print response
     And match response == jsonMatch
 
-    #TODO impl.
-    Scenario: Create color label on the board
-      Given
+  Scenario: Create color label on the board
+    * def jsonMatch =
+      """
+  {
+    "id": #string,
+    "idBoard": #(idCreatedBoard),
+    "name": "new label",
+    "color": "green",
+    "limits": #object
+  }
+      """
+
+    Given path '/boards/' + idCreatedBoard + '/labels'
+    And param name = 'new label'
+    And param color = 'green'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    And request ''
+    When method post
+    Then status 200
+    And print response
+    And match response == jsonMatch
+
+  Scenario: Create new list on board with position value
+
+    Given path '/boards/' + idCreatedBoard + '/lists'
+    And param name = 'New list created for post endpoint scenario'
+    And param pos = 'top'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    And request ''
+    When method post
+    Then status 200
+    And print response
+    And match response ==
+    """
+  {
+    "id": #string,
+    "name": "New list created for post endpoint scenario",
+    "closed": false,
+    "idBoard": #(idCreatedBoard),
+    "pos": #number,
+    "limits": #object
+  }
+    """
+
+  Scenario: Mark the board as viewed
+
+    Given path '/boards/' + idCreatedBoard + '/markedAsViewed'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    And request ''
+    When method post
+    Then status 200
+    And print response
+
+  Scenario: Enable power ups on the board
+
+    Given path '/boards/' + idCreatedBoard + '/powerUps'
+    And param value = 'calendar'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    And request ''
+    When method post
+    Then status 410
+    And print response
+    And match response ==
+    """
+   {"message":"Gone"}
+    """
