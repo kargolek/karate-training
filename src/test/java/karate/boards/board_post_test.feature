@@ -1,7 +1,7 @@
 Feature: Boards post tests
 
   Background:
-    * url 'https://api.trello.com/1/'
+    * url baseUrl
     * call read('backgrounds_board.feature')
 
   Scenario: Create a new board.
@@ -122,15 +122,6 @@ Feature: Boards post tests
     "limits": #object
   }
     """
-
-  Scenario: Mark the board as viewed
-    Given path '/boards/' + idCreatedBoard + '/markedAsViewed'
-    And param key = java.lang.System.getenv('trl_key');
-    And param token = java.lang.System.getenv('trl_token');
-    And request ''
-    When method post
-    Then status 200
-
   Scenario: Enable power ups on the board
     Given path '/boards/' + idCreatedBoard + '/powerUps'
     And param value = 'calendar'

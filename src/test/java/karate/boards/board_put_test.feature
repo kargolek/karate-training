@@ -1,7 +1,7 @@
 Feature: Boards put tests
 
   Background:
-    * url 'https://api.trello.com/1/'
+    * url baseUrl
     * call read('backgrounds_board.feature')
 
   Scenario: Update board an existing board by id
