@@ -6,13 +6,11 @@ function fn() {
   }
   var config = {
     env: env,
-	myVarName: 'someValue'
+	baseUrl: 'https://api.trello.com/1/'
   }
-  if (env == 'dev') {
-    // customize
-    // e.g. config.foo = 'bar';
-  } else if (env == 'e2e') {
-    // customize
-  }
+  karate.configure('connectTimeout', 5000);
+  karate.configure('readTimeout', 5000);
+  karate.configure('logPrettyRequest', true)
+  karate.configure('logPrettyResponse', true)
   return config;
 }

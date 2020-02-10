@@ -1,63 +1,38 @@
 Feature: Boards get tests
 
   Background:
-    * url 'https://api.trello.com/1/'
-    * def boardNameRandom = org.apache.commons.lang.RandomStringUtils.randomAlphabetic(10);
-    #Create a board before each scenario, pass board id to idCreatedBoard field
-    Given path 'boards'
-    And form field name = boardNameRandom
-    And form field defaultLists = 'true'
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When method post
-    Then status 200
-    And print response
-    * def json = response
-    * def idCreatedBoard = get json.id
-    * def idUsername = '5e23b17009db88314e564927'
-    * def idCustomFieldsPlugin = '56d5e249a98895a9797bebb9'
-
-    Given path 'boards/' + idCreatedBoard + '/lists'
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When method get
-    Then status 200
-    * def jsonLists = response
-    * def idFirstList = get jsonLists[0].id
-
-    * def cardNameRandom = org.apache.commons.lang.RandomStringUtils.randomAlphabetic(10);
-    Given path 'cards/'
-    And form field name = cardNameRandom
-    And form field idList = idFirstList
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When method post
-    Then status 200
-    * def resBody = response
-    * def idCreatedCard = get resBody.id
+    * url baseUrl
+    * call read('backgrounds_board.feature')
 
   Scenario: Request all boards data
     Given path 'members/me/boards'
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
     And match $[0].name contains '#string'
-    And print response
 
   Scenario: Request single board data
     Given path 'boards'
     Given path idCreatedBoard
     Given path 'name'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match $._value == boardNameRandom
+
+  Scenario: Get board actions and limit record to one
+    Given path 'boards'
+    And path idCreatedBoard
+    And path 'actions'
+    And form field limit = 1
     And form field key = java.lang.System.getenv('trl_key');
     And form field token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
-    And match $._value == boardNameRandom
-    And print response
-
-  Scenario: Get board actions and limit record to one
-    * def responseBody =
+    And match $[1].id == '#notpresent'
+    And match $[0] contains
     """
    {
       "id":'#string',
@@ -78,27 +53,8 @@ Feature: Boards get tests
       }
    }
     """
-    Given path 'boards'
-    And path idCreatedBoard
-    And path 'actions'
-    And form field limit = 1
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When method get
-    Then status 200
-    And match $[0] contains responseBody
-    And match $[1].id == '#notpresent'
-    And print response
 
   Scenario: Get the enabled Power-Ups on a board
-    * def responseBody =
-      """
-    {
-      "id": '#string',
-      "idBoard": '#string',
-      "idPlugin": '#string'
-    }
-      """
     Given path 'boards'
     And path idCreatedBoard
     And path 'boardPlugins'
@@ -106,8 +62,14 @@ Feature: Boards get tests
     And form field token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
-    And match $[0] contains responseBody
-    And print response
+    And match $[0] contains
+     """
+    {
+      "id": '#string',
+      "idBoard": '#string',
+      "idPlugin": '#string'
+    }
+      """
 
   Scenario: Get data of starred board
     #POST a new star on the latest created board
@@ -118,9 +80,14 @@ Feature: Boards get tests
     And form field token = java.lang.System.getenv('trl_token');
     When method post
     Then status 200
-    And print response
 
-    * def body =
+    #GET data of starred board action
+    Given path 'boards/' + idCreatedBoard + '/boardStars'
+    And form field key = java.lang.System.getenv('trl_key');
+    And form field token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match $[0] contains
     """
    {
       "_id": '#string',
@@ -128,19 +95,16 @@ Feature: Boards get tests
       "pos": '#number'
    }
     """
-    #GET data of starred board action
-    Given path 'boards/' + idCreatedBoard + '/boardStars'
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When method get
-    Then status 200
-    And match $[0] contains body
-    And print response
 
   Scenario: Fetch open cards on a board
-    * def body =
-    """
-    {
+    Given path 'boards/' + idCreatedBoard + '/cards'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match $[0] contains
+     """
+  {
     "id": '#string',
     "checkItemStates": '#null',
     "closed": '#boolean',
@@ -167,14 +131,6 @@ Feature: Boards get tests
   }
     """
 
-    Given path 'boards/' + idCreatedBoard + '/cards'
-    And param key = java.lang.System.getenv('trl_key');
-    And param token = java.lang.System.getenv('trl_token');
-    When method get
-    Then status 200
-    And match $[0] contains body
-    And print response
-
   Scenario: Fetch card data by id
     Given path 'boards/' + idCreatedBoard + '/cards/' + idCreatedCard
     And param key = java.lang.System.getenv('trl_key');
@@ -182,10 +138,8 @@ Feature: Boards get tests
     When method get
     Then status 200
     And match $.id == idCreatedCard
-    And print response
 
   Scenario: Fetch checklists data
-
       #POST checklist on card
     Given path 'checklists'
     And form field idCard = idCreatedCard
@@ -194,10 +148,14 @@ Feature: Boards get tests
     And form field token = java.lang.System.getenv('trl_token');
     When method post
     Then status 200
-    And print response
 
-    * def resBody =
-    """
+    Given path 'boards/' + idCreatedBoard + '/checklists'
+    And form field key = java.lang.System.getenv('trl_key');
+    And form field token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match $[0] contains
+     """
   {
    "id":'#string',
    "name":"new checklist name",
@@ -208,20 +166,21 @@ Feature: Boards get tests
   }
     """
 
-    Given path 'boards/' + idCreatedBoard + '/checklists'
+  Scenario: Get the Custom Field Definitions that exist on a board.
+    #Enable board plugins custom fields on newly created board
+    Given path 'boards/' + idCreatedBoard + '/boardPlugins'
+    And form field idPlugin = idCustomFieldsPlugin
     And form field key = java.lang.System.getenv('trl_key');
     And form field token = java.lang.System.getenv('trl_token');
-    When method get
+    When method post
     Then status 200
-    And match $[0] contains resBody
-    And print response
 
-  Scenario: Get the Custom Field Definitions that exist on a board.
-
-      #'#(idCreatedBoard)'- id of created board pass as param to json
-    * def jsonBodyData =
+    #Create custom field list with two options on the board
+    Given path 'customFields'
+    And header Content-Type = 'application/json'
+    And request
     """
-   { 
+   {
    "idModel":"#(idCreatedBoard)",
    "modelType":"board",
    "name":"New",
@@ -246,25 +205,10 @@ Feature: Boards get tests
    "display_cardFront":true
    }
     """
-    #Enable board plugins custom fields on newly created board
-    Given path 'boards/' + idCreatedBoard + '/boardPlugins'
-    And form field idPlugin = idCustomFieldsPlugin
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When method post
-    Then status 200
-    And print response
-
-    #Create custom field list with two options on the board
-    Given path 'customFields'
-    And header Content-Type = 'application/json'
-    And request jsonBodyData
     And param key = java.lang.System.getenv('trl_key');
     And param token = java.lang.System.getenv('trl_token');
     When method post
-    And print jsonPost
     Then status 200
-    And print response
 
     #Get data for created custom field
     Given path 'boards/' + idCreatedBoard + '/customFields'
@@ -274,46 +218,39 @@ Feature: Boards get tests
     Then status 200
     And match $[0].id == '#string'
     And match $[0].idModel == idCreatedBoard
-    And print response
 
   Scenario: Get labels data from a board
-
-    * def jsonMatch =
-      """
-  {
-    "id": '#string',
-    "name": '#string',
-    "color": '#string'
-  }
-      """
     Given path 'boards/' + idCreatedBoard + '/labels'
     And param key = java.lang.System.getenv('trl_key');
     And param token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
-    And match $[0] contains jsonMatch
-    And print response
+    And match $[0] contains
+    """
+    {
+      "id": '#string',
+      "name": '#string',
+      "color": '#string'
+    }
+      """
 
   Scenario: Get list date from a board
-    * def jsonMatch =
-        """
-  {
-    "id": '#string',
-    "name": '#string',
-    "cards": '#array'
-  }
-        """
     Given path 'boards/' + idCreatedBoard + '/lists'
     And param cards = 'all'
     And param key = java.lang.System.getenv('trl_key');
     And param token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
-    And match $[0] contains jsonMatch
-    And print response
+    And match $[0] contains
+    """
+  {
+    "id": '#string',
+    "name": '#string',
+    "cards": '#array'
+  }
+    """
 
   Scenario: Get list date from a board with filter option
-
     Given path '/lists/' + idFirstList + '/closed'
     And param value = true
     And param key = java.lang.System.getenv('trl_key');
@@ -322,8 +259,13 @@ Feature: Boards get tests
     When method put
     Then status 200
 
-    * def jsonMatch =
-    """
+    Given path '/boards/' + idCreatedBoard + '/lists/closed'
+    And param key = java.lang.System.getenv('trl_key');
+    And param token = java.lang.System.getenv('trl_token');
+    When method get
+    Then status 200
+    And match response[0] contains
+     """
   {
     "id": '#string',
     "name": '#string',
@@ -333,17 +275,14 @@ Feature: Boards get tests
     "subscribed": '#boolean'
   }
     """
-    Given path '/boards/' + idCreatedBoard + '/lists/closed'
+
+  Scenario: Get the members for a board
+    Given path '/boards/' + idCreatedBoard + '/members'
     And param key = java.lang.System.getenv('trl_key');
     And param token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
-    And match response[0] contains jsonMatch
-    And print response
-
-  Scenario: Get the members for a board
-
-    * def jsonMatch =
+    And match response[0] ==
     """
   {
     "id": '#(idUsername)',
@@ -351,17 +290,14 @@ Feature: Boards get tests
     "username": "userautoapitest"
   }
     """
-    Given path '/boards/' + idCreatedBoard + '/members'
+
+  Scenario: Get information about the memberships users have to the board.
+    Given path '/boards/' + idCreatedBoard + '/memberships'
     And param key = java.lang.System.getenv('trl_key');
     And param token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
-    And match response[0] == jsonMatch
-    And print response
-
-  Scenario: Get information about the memberships users have to the board.
-
-    * def jsonMatch =
+    And match response[0] ==
     """
   {
     "id": '#string',
@@ -371,18 +307,14 @@ Feature: Boards get tests
     "deactivated": false
   }
     """
-    Given path '/boards/' + idCreatedBoard + '/memberships'
+
+  Scenario: List the Power-Ups for a board
+    Given path '/boards/' + idCreatedBoard + '/plugins'
     And param key = java.lang.System.getenv('trl_key');
     And param token = java.lang.System.getenv('trl_token');
     When method get
     Then status 200
-    And match response[0] == jsonMatch
-    And print response
-    And print jsonMatch
-
-  Scenario: List the Power-Ups for a board
-
-    * def jsonMatch =
+    And match response[0] contains
     """
   {
     "id": #string,
@@ -394,11 +326,3 @@ Feature: Boards get tests
     "name": #string,
   }
     """
-    Given path '/boards/' + idCreatedBoard + '/plugins'
-    And param key = java.lang.System.getenv('trl_key');
-    And param token = java.lang.System.getenv('trl_token');
-    When method get
-    Then status 200
-    And match response[0] contains jsonMatch
-    And print response
-    And print jsonMatch

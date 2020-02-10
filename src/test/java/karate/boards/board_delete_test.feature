@@ -1,43 +1,8 @@
 Feature: Boards delete tests
 
   Background:
-    * url 'https://api.trello.com/1/'
-    * def boardNameRandom = org.apache.commons.lang.RandomStringUtils.randomAlphabetic(10);
-    #Create a board before each scenario, pass board id to idCreatedBoard field
-    Given path 'boards'
-    And form field name = boardNameRandom
-    And form field defaultLists = 'true'
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When method post
-    Then status 200
-    And print response
-
-    * def json = response
-    * def idCreatedBoard = get json.id
-    * def idUsername = '5e23b17009db88314e564927'
-    * def idCustomFieldsPlugin = '56d5e249a98895a9797bebb9'
-    * def idMember = '5e31b359cd8dfc1384b2e515'
-
-
-    Given path 'boards/' + idCreatedBoard + '/lists'
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When method get
-    Then status 200
-    * def jsonLists = response
-    * def idFirstList = get jsonLists[0].id
-
-    * def cardNameRandom = org.apache.commons.lang.RandomStringUtils.randomAlphabetic(10);
-    Given path 'cards/'
-    And form field name = cardNameRandom
-    And form field idList = idFirstList
-    And form field key = java.lang.System.getenv('trl_key');
-    And form field token = java.lang.System.getenv('trl_token');
-    When method post
-    Then status 200
-    * def resBody = response
-    * def idCreatedCard = get resBody.id
+    * url baseUrl
+    * call read('backgrounds_board.feature')
 
   Scenario: Delete a board.
     Given path '/boards/' + idCreatedBoard
@@ -45,7 +10,6 @@ Feature: Boards delete tests
     And param token = java.lang.System.getenv('trl_token');
     When method delete
     Then status 200
-    And print response
     And match response ==
       """
       {"_value": null}
@@ -68,10 +32,8 @@ Feature: Boards delete tests
     And param token = java.lang.System.getenv('trl_token');
     When method delete
     Then status 200
-    And print response
 
   Scenario: Remove user from the board.
-
     Given path 'boards/' + idCreatedBoard + '/members/' + idMember
     And param type = 'normal'
     And param key = java.lang.System.getenv('trl_key');
